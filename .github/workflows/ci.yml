@@ -1,0 +1,28 @@
+name: ci
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Run tests
+        id: tests
+        run: |
+          mkdir -p reports
+          cat > reports/junit.xml <<'EOF'
+          <?xml version="1.0" encoding="UTF-8"?><testsuites><testsuite name="SampleSuite" tests="3" failures="1" time="0.12"><testcase name="test_addition" classname="tests.sample" file="tests/test_sample.py" line="4" time="0.01"/><testcase name="test_subtraction" classname="tests.sample" file="tests/test_sample.py" line="8" time="0.01"/><testcase name="test_division" classname="tests.sample" file="tests/test_sample.py" line="12" time="0.10"><failure type="AssertionError" message="assert 1 == 2">tests/test_sample.py:13: AssertionError</failure></testcase></testsuite></testsuites>
+          EOF
+          exit 1
+
+      - name: Mergify CI Upload
+        if: success() || failure()
+        uses: mergifyio/gha-mergify-ci@v26
+        with:
+          token: ${{ secrets.MERGIFY_TOKEN }}
+          report_path: reports/junit.xml
+          test_step_outcome: ${{ steps.tests.outcome }}
